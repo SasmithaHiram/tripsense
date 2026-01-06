@@ -23,16 +23,18 @@ public class Preference {
 
     @ElementCollection
     @CollectionTable(
-            name = "preferece_categories",
+            name = "preference_categories",
             joinColumns = @JoinColumn(name = "preference_id")
     )
+    @Column(name = "category")
     private List<String> categories;
 
     @ElementCollection
     @CollectionTable(
-            name = "preferece_locations",
-            joinColumns = @JoinColumn(name = "location_id")
+            name = "preference_locations",
+            joinColumns = @JoinColumn(name = "preference_id")
     )
+    @Column(name = "location")
     private List<String> locations;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -53,6 +55,6 @@ public class Preference {
     }
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

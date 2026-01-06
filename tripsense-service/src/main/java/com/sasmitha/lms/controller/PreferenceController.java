@@ -16,9 +16,9 @@ public class PreferenceController {
     private final PreferenceServiceImpl preferenceService;
 
     @PostMapping
-    public ResponseEntity<Preference> create(@RequestBody PreferenceRequest preferenceRequest) {
+    public String create(@RequestBody PreferenceRequest preferenceRequest) {
         Preference saved = preferenceService.save(preferenceRequest);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
+        return "Succ";
     }
 }
 
