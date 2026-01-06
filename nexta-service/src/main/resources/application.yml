@@ -1,0 +1,21 @@
+server:
+  servlet:
+    context-path: /api/v1
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/demo
+    username: root
+    password: 1234
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: b4k9yZs2gM7jVq8P5nLdH1QvR+F0xZpWq3B9jH8eF2yK0sT1mNcA5vLq7bD4gH6jhgggggggggggggfhhdddff44rrdd
+  expiration: 86400000 # 1 day
