@@ -12,16 +12,16 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/admin")
 @RequiredArgsConstructor
 @CrossOrigin
-public class    AuthController {
+public class AuthController {
     private final AuthServiceImpl authServiceImpl;
 
     @PostMapping("/register")
     @PreAuthorize("hasAuthority('SYSTEM_ADMIN')")
     public ResponseEntity<RegisterResponse> create(@RequestBody UserRegisterRequest userRegisterRequest) {
-        RegisterResponse user = authServiceImpl.createUser(userRegisterRequest);
+        RegisterResponse user = authServiceImpl.create(userRegisterRequest);
 
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -30,7 +30,7 @@ public class    AuthController {
         }
     }
 
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     public LoginResponse login(@RequestBody LoginRequest loginRequest) {
         return authServiceImpl.loginUser(loginRequest);
     }

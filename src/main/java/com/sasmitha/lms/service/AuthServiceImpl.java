@@ -22,7 +22,7 @@ public class AuthServiceImpl {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JWTUtil jwtUtil;
 
-    public RegisterResponse createUser(UserRegisterRequest userRegisterRequest) {
+    public RegisterResponse create(UserRegisterRequest userRegisterRequest) {
         if (authRepository.findByEmail(userRegisterRequest.getEmail()).isPresent()) {
             throw new RuntimeException(userRegisterRequest.getEmail() + " is already registered");
         }
