@@ -29,6 +29,32 @@ On successful login, the app navigates to the Preferences page
 under `token`, `accessToken`, or `jwt`, it is stored in `SharedPreferences`
 as `auth_token`.
 
+### Preferences
+
+- Categories available: Adventure, Beach, Cultural, Leisure, Nature, Romantic, Wildlife, Historical
+- You can select multiple. Saving requires selecting at least one.
+- "Skip for now" clears any saved categories and keeps you on the page.
+
+### Submit to Backend
+
+After completing Categories → Location → Dates → Distance & Budget, the app
+POSTs your preferences to `http://localhost:8080/api/v1/preferences` with
+payload:
+
+```json
+{
+  "categories": ["Adventure", "Nature"],
+  "locations": ["Colombo"],
+  "startDate": "2026-01-10",
+  "endDate": "2026-03-31",
+  "maxDistanceKm": 25,
+  "maxBudget": 50000.0
+}
+```
+
+If logged in and a token is present, the request includes
+`Authorization: Bearer <token>`.
+
 ### Windows note (plugins)
 
 If you see an error about symlink support when adding or using plugins

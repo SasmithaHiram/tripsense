@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/preferences_screen.dart';
+import 'screens/location_screen.dart';
+import 'screens/dates_screen.dart';
+import 'screens/constraints_screen.dart';
 
 void main() {
   runApp(const TripSenseApp());
@@ -23,6 +26,9 @@ class TripSenseApp extends StatelessWidget {
         LoginScreen.routeName: (_) => const LoginScreen(),
         RegisterScreen.routeName: (_) => const RegisterScreen(),
         PreferencesScreen.routeName: (_) => const PreferencesScreen(),
+        LocationScreen.routeName: (_) => const LocationScreen(),
+        DatesScreen.routeName: (_) => const DatesScreen(),
+        ConstraintsScreen.routeName: (_) => const ConstraintsScreen(),
       },
     );
   }
