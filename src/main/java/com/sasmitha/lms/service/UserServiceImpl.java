@@ -4,7 +4,7 @@ import com.sasmitha.lms.dto.RegisterResponse;
 import com.sasmitha.lms.dto.UserRegisterRequest;
 import com.sasmitha.lms.model.Role;
 import com.sasmitha.lms.model.User;
-import com.sasmitha.lms.repository.AuthRepository;
+import com.sasmitha.lms.repository.AdminRepository;
 import com.sasmitha.lms.repository.RoleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +15,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Transactional
 public class UserServiceImpl {
-    private final AuthRepository authRepository;
+    private final AdminRepository adminRepository;
     private final RoleRepository roleRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     public RegisterResponse create(UserRegisterRequest userRegisterRequest) {
-        if (authRepository.findByEmail(userRegisterRequest.getEmail()).isPresent()) {
+        if (adminRepository.findByEmail(userRegisterRequest.getEmail()).isPresent()) {
             throw new RuntimeException(userRegisterRequest.getEmail() + " is already registered");
         }
 
@@ -33,7 +33,7 @@ public class UserServiceImpl {
         user.setLastName(userRegisterRequest.getLastName());
         user.setEmail(userRegisterRequest.getEmail());
         user.setPassword(bCryptPasswordEncoder.encode(userRegisterRequest.getPassword()));
-        authRepository.save(user);
+        adminRepository.save(user);
 
         return new RegisterResponse(
                 user.getEmail(),

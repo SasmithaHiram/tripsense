@@ -2,7 +2,7 @@ package com.sasmitha.lms.setup;
 
 import com.sasmitha.lms.model.Role;
 import com.sasmitha.lms.model.User;
-import com.sasmitha.lms.repository.AuthRepository;
+import com.sasmitha.lms.repository.AdminRepository;
 import com.sasmitha.lms.repository.RoleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class OnApplicationStartUp {
     private final RoleRepository roleRepository;
-    private final AuthRepository authRepository;
+    private final AdminRepository adminRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @EventListener
@@ -35,7 +35,7 @@ public class OnApplicationStartUp {
             user.setLastName("Mendis");
             user.setEmail("sasmithahiram2003@gmail.com");
             user.setPassword(bCryptPasswordEncoder.encode("123"));
-            authRepository.save(user);
+            adminRepository.save(user);
         }
     }
 }

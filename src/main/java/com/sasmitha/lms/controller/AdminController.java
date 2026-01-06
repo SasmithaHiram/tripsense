@@ -1,7 +1,7 @@
 package com.sasmitha.lms.controller;
 
 import com.sasmitha.lms.dto.RegisterResponse;
-import com.sasmitha.lms.service.AuthServiceImpl;
+import com.sasmitha.lms.service.AdminServiceImpl;
 import com.sasmitha.lms.dto.LoginRequest;
 import com.sasmitha.lms.dto.LoginResponse;
 import com.sasmitha.lms.dto.UserRegisterRequest;
@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 @CrossOrigin
-public class AuthController {
-    private final AuthServiceImpl authServiceImpl;
+public class AdminController {
+    private final AdminServiceImpl adminServiceImpl;
 
     @PostMapping("/register")
     @PreAuthorize("hasAuthority('SYSTEM_ADMIN')")
     public ResponseEntity<RegisterResponse> create(@RequestBody UserRegisterRequest userRegisterRequest) {
-        RegisterResponse user = authServiceImpl.create(userRegisterRequest);
+        RegisterResponse user = adminServiceImpl.create(userRegisterRequest);
 
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -32,6 +32,6 @@ public class AuthController {
 
     @PostMapping("/auth/login")
     public LoginResponse login(@RequestBody LoginRequest loginRequest) {
-        return authServiceImpl.loginUser(loginRequest);
+        return adminServiceImpl.loginUser(loginRequest);
     }
 }

@@ -16,7 +16,7 @@ public class UserController {
     private final UserServiceImpl userServiceImpl;
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> create(UserRegisterRequest userRegisterRequest) {
+    public ResponseEntity<RegisterResponse> create(@RequestBody UserRegisterRequest userRegisterRequest) {
         RegisterResponse user = userServiceImpl.create(userRegisterRequest);
 
         if (user == null) {

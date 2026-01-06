@@ -7,7 +7,7 @@ import com.sasmitha.lms.dto.RegisterResponse;
 import com.sasmitha.lms.dto.UserRegisterRequest;
 import com.sasmitha.lms.model.Role;
 import com.sasmitha.lms.model.User;
-import com.sasmitha.lms.repository.AuthRepository;
+import com.sasmitha.lms.repository.AdminRepository;
 import com.sasmitha.lms.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -16,14 +16,14 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl {
-    private final AuthRepository authRepository;
+public class AdminServiceImpl {
+    private final AdminRepository adminRepository;
     private final RoleRepository roleRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JWTUtil jwtUtil;
 
     public RegisterResponse create(UserRegisterRequest userRegisterRequest) {
-        if (authRepository.findByEmail(userRegisterRequest.getEmail()).isPresent()) {
+        if (adminRepository.findByEmail(userRegisterRequest.getEmail()).isPresent()) {
             throw new RuntimeException(userRegisterRequest.getEmail() + " is already registered");
         }
         Role roleFromDB = roleRepository.findByName(userRegisterRequest.getRole())
@@ -35,7 +35,7 @@ public class AuthServiceImpl {
         user.setLastName(userRegisterRequest.getLastName());
         user.setEmail(userRegisterRequest.getEmail());
         user.setPassword(bCryptPasswordEncoder.encode(userRegisterRequest.getPassword()));
-        authRepository.save(user);
+        adminRepository.save(user);
 
         return new RegisterResponse(
                 user.getEmail(),
@@ -44,7 +44,7 @@ public class AuthServiceImpl {
     }
 
     public LoginResponse loginUser(LoginRequest loginRequest) {
-        User user = authRepository.findByEmail(loginRequest.getEmail()).orElse(null);
+        User user = adminRepository.findByEmail(loginRequest.getEmail()).orElse(null);
 
         if (user == null) {
             return new LoginResponse("User not found", null);
