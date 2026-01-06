@@ -18,8 +18,21 @@ import java.util.List;
 @NoArgsConstructor
 public class Preference {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ElementCollection
+    @CollectionTable(
+            name = "preferece_categories",
+            joinColumns = @JoinColumn(name = "preference_id")
+    )
     private List<String> categories;
+
+    @ElementCollection
+    @CollectionTable(
+            name = "preferece_locations",
+            joinColumns = @JoinColumn(name = "location_id")
+    )
     private List<String> locations;
     private LocalDate startDate;
     private LocalDate endDate;
