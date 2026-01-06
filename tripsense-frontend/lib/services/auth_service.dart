@@ -9,7 +9,7 @@ class AuthService {
 
   // Endpoints
   static const String loginEndpoint = '/auth/login';
-  static const String registerEndpoint = '/auth/register';
+  static const String registerEndpoint = '/users/register';
 
   /// Attempts to login with [email] and [password].
   /// Returns true on success. Stores token if present in response.
@@ -53,7 +53,6 @@ class AuthService {
 
   /// Registers a new user.
   Future<bool> register({
-    required String role,
     required String firstName,
     required String lastName,
     required String email,
@@ -65,7 +64,6 @@ class AuthService {
       'Accept': 'application/json',
     };
     final body = jsonEncode({
-      'role': role,
       'firstName': firstName,
       'lastName': lastName,
       'email': email,

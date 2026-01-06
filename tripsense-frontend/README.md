@@ -9,7 +9,7 @@ This project provides Login and Register screens wired into the app routes.
 ## Auth Screens
 
 - Login: email, password
-- Register: role, firstName, lastName, email, password
+- Register: firstName, lastName, email, password
 
 ## Run Locally
 
@@ -21,6 +21,7 @@ flutter run
 ## Backend Integration
 
 Login is integrated to Spring at `http://localhost:8080/api/v1/auth/login`.
+Register is integrated at `http://localhost:8080/api/v1/users/register`.
 You can adjust the base URL/endpoints in `lib/services/auth_service.dart`.
 
 On successful login, the app navigates to the Preferences page

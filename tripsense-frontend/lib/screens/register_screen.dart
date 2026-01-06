@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   static const routeName = '/register';
@@ -10,7 +11,6 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _roleCtrl = TextEditingController();
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
@@ -20,7 +20,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _roleCtrl.dispose();
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _emailCtrl.dispose();
@@ -48,13 +47,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
     try {
-      // TODO: Integrate with backend: AuthService.register(role, firstName, lastName, email, password)
-      await Future.delayed(const Duration(milliseconds: 800));
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration successful (stub)')),
+      final auth = AuthService();
+      final ok = await auth.register(
+        firstName: _firstNameCtrl.text.trim(),
+        lastName: _lastNameCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text,
       );
-      Navigator.pop(context); // back to login
+      if (!mounted) return;
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration successful')),
+        );
+        Navigator.pop(context); // back to login
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -94,16 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _roleCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Role',
-                            hintText: 'e.g., USER',
-                            prefixIcon: Icon(Icons.person_outline),
-                          ),
-                          validator: _required,
-                        ),
-                        const SizedBox(height: 12),
+
                         TextFormField(
                           controller: _firstNameCtrl,
                           decoration: const InputDecoration(
