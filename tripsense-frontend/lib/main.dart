@@ -5,6 +5,8 @@ import 'screens/preferences_screen.dart';
 import 'screens/location_screen.dart';
 import 'screens/dates_screen.dart';
 import 'screens/constraints_screen.dart';
+import 'screens/dashboard_screen.dart';
+import 'screens/profile_screen.dart';
 
 void main() {
   runApp(const TripSenseApp());
@@ -29,6 +31,8 @@ class TripSenseApp extends StatelessWidget {
         LocationScreen.routeName: (_) => const LocationScreen(),
         DatesScreen.routeName: (_) => const DatesScreen(),
         ConstraintsScreen.routeName: (_) => const ConstraintsScreen(),
+        DashboardScreen.routeName: (_) => const DashboardScreen(),
+        ProfileScreen.routeName: (_) => const ProfileScreen(),
       },
     );
   }

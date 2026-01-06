@@ -87,7 +87,11 @@ class _ConstraintsScreenState extends State<ConstraintsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Preferences submitted to backend')),
       );
-      Navigator.popUntil(context, ModalRoute.withName('/preferences'));
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/dashboard',
+        (route) => false,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
