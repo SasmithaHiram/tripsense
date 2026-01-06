@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -51,5 +52,22 @@ public class PreferenceServiceImpl {
         preferenceResponse.setMaxDistanceKm(preferenceRequest.getMaxDistanceKm());
         preferenceResponse.setMaxBudget(preferenceRequest.getMaxBudget());
         return preferenceResponse;
+    }
+
+    public List<PreferenceResponse> getByUserId(Long userId) {
+        List<Preference> preferences = preferenceRepository.findByUserId(userId);
+        return preferences.stream().map(pref -> {
+            PreferenceResponse resp = new PreferenceResponse();
+            resp.setId(pref.getId());
+            resp.setCategories(pref.getCategories());
+            resp.setLocations(pref.getLocations());
+            resp.setStartDate(pref.getStartDate());
+            resp.setEndDate(pref.getEndDate());
+            resp.setMaxDistanceKm(pref.getMaxDistanceKm());
+            resp.setMaxBudget(pref.getMaxBudget());
+            resp.setCreateAt(pref.getCreateAt());
+            resp.setUpdateAt(pref.getUpdateAt());
+            return resp;
+        }).toList();
     }
 }

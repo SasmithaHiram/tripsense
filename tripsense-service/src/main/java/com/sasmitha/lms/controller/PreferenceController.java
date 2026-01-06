@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/preferences")
 @RequiredArgsConstructor
@@ -17,5 +19,10 @@ public class PreferenceController {
     @PostMapping
     public ResponseEntity<PreferenceResponse> create(@RequestBody PreferenceRequest preferenceRequest) {
         return ResponseEntity.ok(preferenceService.create(preferenceRequest));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<PreferenceResponse>> getByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(preferenceService.getByUserId(userId));
     }
 }
