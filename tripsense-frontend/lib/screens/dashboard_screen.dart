@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/preferences_service.dart';
 import '../services/preferences_api_service.dart';
+import '../models/ai_recommendation.dart';
+import '../widgets/recommendations_insights.dart';
 import '../services/user_api_service.dart';
 import '../utils/jwt_utils.dart';
 
@@ -23,7 +25,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DateTime? _end;
   int? _maxDistance;
   double? _maxBudget;
-  List<String> _suggestions = const [];
+  List<AiRecommendation> _suggestions = const [];
 
   @override
   void initState() {
@@ -38,12 +40,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final (d, b) = await _prefs.loadConstraints();
 
     // Fetch suggestions via /preferences/user/{id}
-    List<String> suggestions = const [];
+    List<AiRecommendation> suggestions = const [];
     try {
       final sp = await SharedPreferences.getInstance();
       final userId = sp.getInt('user_id');
       if (userId != null) {
-        suggestions = await _prefsApi.getUserSuggestionTitles(userId);
+        suggestions = await _prefsApi.getUserRecommendations(userId);
       }
     } catch (_) {}
     if (!mounted) return;
@@ -66,6 +68,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasSetup =
+        _categories.isNotEmpty ||
+        _location != null ||
+        _start != null ||
+        _end != null ||
+        _maxDistance != null ||
+        _maxBudget != null;
     return Scaffold(
       appBar: AppBar(
         title: const Text('TripSense Dashboard'),
@@ -89,43 +98,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  const Text(
-                    'Your trip setup',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text('Categories'),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _categories
-                                .map((c) => Chip(label: Text(c)))
-                                .toList(),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text('Location'),
-                          const SizedBox(height: 4),
-                          Text(_location ?? 'Not set'),
-                          const SizedBox(height: 12),
-                          const Text('Dates'),
-                          const SizedBox(height: 4),
-                          Text('${_dateText(_start)} → ${_dateText(_end)}'),
-                          const SizedBox(height: 12),
-                          const Text('Constraints'),
-                          const SizedBox(height: 4),
-                          Text('Max distance: ${_maxDistance ?? '-'} km'),
-                          Text('Max budget: ${_maxBudget ?? '-'}'),
-                        ],
+                  if (hasSetup) ...[
+                    const Text(
+                      'Your trip setup',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text('Categories'),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _categories
+                                  .map((c) => Chip(label: Text(c)))
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text('Location'),
+                            const SizedBox(height: 4),
+                            Text(_location ?? 'Not set'),
+                            const SizedBox(height: 12),
+                            const Text('Dates'),
+                            const SizedBox(height: 4),
+                            Text('${_dateText(_start)} → ${_dateText(_end)}'),
+                            const SizedBox(height: 12),
+                            const Text('Constraints'),
+                            const SizedBox(height: 4),
+                            Text('Max distance: ${_maxDistance ?? '-'} km'),
+                            Text('Max budget: ${_maxBudget ?? '-'}'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text(
+                              'Get started',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'You haven\'t set up your preferences yet. Add them to tailor your trip suggestions.',
+                            ),
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: FilledButton.icon(
+                                onPressed: () => Navigator.pushNamed(
+                                  context,
+                                  '/preferences',
+                                ),
+                                icon: const Icon(Icons.tune),
+                                label: const Text('Set up preferences'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   const Text(
                     'Suggestions',
@@ -138,13 +186,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Column(
                       children: _suggestions
                           .map(
-                            (s) => ListTile(
+                            (r) => ListTile(
                               leading: const Icon(Icons.explore_outlined),
-                              title: Text(s),
+                              title: Text(r.title),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (r.location != null) Text(r.location!),
+                                  Text(
+                                    [
+                                      if (r.category != null)
+                                        'Category: ${r.category}',
+                                      if (r.estimatedCost != null)
+                                        'Cost: ${r.estimatedCost!.toStringAsFixed(0)}',
+                                      if (r.estimatedDistanceKm != null)
+                                        '${r.estimatedDistanceKm!.toStringAsFixed(0)} km',
+                                      if (r.durationHours != null)
+                                        '${r.durationHours!.toStringAsFixed(1)} h',
+                                    ].join(' • '),
+                                  ),
+                                ],
+                              ),
+                              trailing: (r.score != null)
+                                  ? Chip(
+                                      label: Text(
+                                        'Score ${r.score!.toStringAsFixed(1)}',
+                                      ),
+                                    )
+                                  : null,
                             ),
                           )
                           .toList(),
                     ),
+                  const SizedBox(height: 16),
+                  RecommendationsInsights(items: _suggestions),
                   const SizedBox(height: 16),
                   SizedBox(
                     height: 48,
@@ -182,7 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           }
 
                           final results = await _prefsApi
-                              .getUserSuggestionTitles(userId);
+                              .getUserRecommendations(userId);
                           if (!mounted) return;
                           setState(() {
                             _suggestions = results;

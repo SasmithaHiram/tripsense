@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/ai_recommendation.dart';
 
 class PreferencesApiService {
   static const String baseUrl = 'http://localhost:8080/api/v1';
@@ -126,6 +127,21 @@ class PreferencesApiService {
           .whereType<Map>()
           .map((m) => m['title'])
           .whereType<String>()
+          .toList(growable: false);
+    }
+    return const [];
+  }
+
+  /// Returns full AI recommendations as strongly-typed models.
+  Future<List<AiRecommendation>> getUserRecommendations(int userId) async {
+    final data = await getUserPreferences(userId);
+    if (data == null) return const [];
+    final ai = data['aiRecommendations'];
+    if (ai is Map && ai['recommendations'] is List) {
+      final recs = ai['recommendations'] as List;
+      return recs
+          .whereType<Map>()
+          .map((m) => AiRecommendation.fromJson(Map<String, dynamic>.from(m)))
           .toList(growable: false);
     }
     return const [];

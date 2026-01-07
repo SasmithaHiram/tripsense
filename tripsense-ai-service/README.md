@@ -29,6 +29,64 @@ Restart the server after changes to `.env`.
 - Path: `/api/recomendations` (misspelling intentional to match client)
 - Content-Type: `application/json`
 
+## Usage
+
+POST to `/api/recomendations` (intentional misspelling to match the client) with either:
+
+- Direct fields
+
+  - `categories: string[]`
+  - `locations: string[]`
+  - `startDate?: string`
+  - `endDate?: string`
+  - `maxDistanceKm?: number`
+  - `maxBudget?: number`
+
+- Or a `preferences` array (the service will use the first item):
+
+```json
+{
+  "preferences": [
+    {
+      "categories": ["nature", "beach"],
+      "locations": ["Galle", "Mirissa"],
+      "startDate": "2026-01-10",
+      "endDate": "2026-01-12",
+      "maxDistanceKm": 120,
+      "maxBudget": 80
+    }
+  ]
+}
+```
+
+### Response
+
+```json
+{
+  "recommendations": [
+    {
+      "title": "Beach day",
+      "location": "Galle",
+      "category": "beach",
+      "estimatedCost": 45,
+      "estimatedDistanceKm": 30,
+      "durationHours": 4,
+      "score": 0.87
+    }
+  ],
+  "summary": {
+    "count": 6,
+    "startDate": "2026-01-10",
+    "endDate": "2026-01-12"
+  }
+}
+```
+
+## OpenAI Integration
+
+- If `OPENAI_API_KEY` is set, the service uses OpenAI (model defaults to `gpt-4o-mini`; override via `OPENAI_MODEL`).
+- If not set, a lightweight local fallback generates realistic, deterministic recommendations for development/testing.
+
 ### Request body
 
 ```json

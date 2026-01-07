@@ -78,8 +78,16 @@ app.post("/api/recomendations", (req, res) => {
       return;
     }
 
-    // OpenAI not configured: return empty recommendations
-    finish([]);
+    // OpenAI not configured: generate lightweight local recommendations
+    const localRecs = generateLocalRecommendations({
+      categories,
+      locations,
+      startDate,
+      endDate,
+      maxDistanceKm,
+      maxBudget,
+    });
+    finish(localRecs);
   } catch (err) {
     console.error("/api/recomendations error", err);
     res.status(500).json({ error: "internal_error" });
@@ -128,6 +136,89 @@ async function generateWithOpenAI(params) {
     ? parsed.recommendations
     : [];
   return list.slice(0, 15);
+}
+
+function generateLocalRecommendations(params) {
+  const {
+    categories = [],
+    locations = [],
+    maxDistanceKm,
+    maxBudget,
+  } = params || {};
+
+  const catLabels = {
+    culture: ["Temple visit", "Museum tour", "Heritage walk"],
+    nature: ["Scenic hike", "Waterfall stop", "Lakeside picnic"],
+    beach: ["Beach day", "Sunset watching", "Surf lesson"],
+    food: ["Street food crawl", "Tea tasting", "Seafood lunch"],
+    adventure: ["White-water rafting", "Zipline park", "Cycling loop"],
+  };
+
+  const defaults = [
+    "Explore local market",
+    "Try regional cuisine",
+    "City highlights",
+  ];
+
+  const items = [];
+  const safeCategories =
+    Array.isArray(categories) && categories.length
+      ? categories
+      : ["culture", "nature", "food"];
+  const safeLocations =
+    Array.isArray(locations) && locations.length ? locations : ["Colombo"];
+
+  let seed = (safeCategories.join("|") + safeLocations.join("|")).length;
+  const rand = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+
+  const pick = (arr) => arr[Math.floor(rand() * arr.length) % arr.length];
+
+  for (const loc of safeLocations.slice(0, 3)) {
+    for (const cat of safeCategories.slice(0, 4)) {
+      const baseTitles = catLabels[cat?.toLowerCase?.()] || defaults;
+      const title = pick(baseTitles);
+
+      let distance = Math.round((10 + rand() * 140) * 10) / 10; // 10–150 km
+      if (typeof maxDistanceKm === "number") {
+        distance = Math.min(distance, Math.max(5, maxDistanceKm));
+      }
+
+      let cost = Math.round((15 + rand() * 85) * 10) / 10; // 15–100 USD per activity
+      if (typeof maxBudget === "number") {
+        cost = Math.min(cost, Math.max(5, maxBudget));
+      }
+
+      const duration = Math.max(1, Math.round(1 + rand() * 6)); // 1–7 hours
+      const score = Math.round((0.6 + rand() * 0.4) * 100) / 100; // 0.6–1.0
+
+      items.push({
+        title,
+        location: loc,
+        category: cat,
+        estimatedCost: cost,
+        estimatedDistanceKm: distance,
+        durationHours: duration,
+        score,
+      });
+    }
+  }
+
+  // Deduplicate by title+location+category
+  const seen = new Set();
+  const unique = [];
+  for (const it of items) {
+    const key = `${it.title}|${it.location}|${it.category}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(it);
+    }
+  }
+
+  // Rank by score descending and keep top 12
+  return unique.sort((a, b) => b.score - a.score).slice(0, 12);
 }
 
 app.listen(port, () => {
