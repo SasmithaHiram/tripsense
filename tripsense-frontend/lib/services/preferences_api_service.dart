@@ -46,6 +46,19 @@ class PreferencesApiService {
     throw Exception(message);
   }
 
+  Future<Map<String, String>> _headers() async {
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
   /// Fetch stored preferences and AI recommendations for a specific user.
   /// Returns a JSON map if found, or null if none exist (e.g., 404).
   Future<Map<String, dynamic>?> getUserPreferences(int userId) async {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/preferences_service.dart';
 import '../services/preferences_api_service.dart';
+import '../services/user_api_service.dart';
+import '../utils/jwt_utils.dart';
 
 class DashboardScreen extends StatefulWidget {
   static const routeName = '/dashboard';
@@ -137,7 +139,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: _suggestions
                           .map(
                             (s) => ListTile(
-                              leading: const Icon(Icons.place_outlined),
+                              leading: const Icon(Icons.explore_outlined),
                               title: Text(s),
                             ),
                           )
@@ -149,7 +151,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: FilledButton.icon(
                       onPressed: () async {
                         setState(() => _loading = true);
-                        await _load();
+                        try {
+                          final sp = await SharedPreferences.getInstance();
+                          int? userId = sp.getInt('user_id');
+
+                          if (userId == null) {
+                            final token = sp.getString('auth_token');
+                            if (token != null && token.isNotEmpty) {
+                              final decodedId = JwtUtils.extractUserId(token);
+                              if (decodedId != null) {
+                                userId = decodedId;
+                                await sp.setInt('user_id', userId);
+                              }
+                            }
+                          }
+
+                          if (userId == null) {
+                            try {
+                              final me = await UserApiService().getMe();
+                              final id = me['id'] as int?;
+                              if (id != null) {
+                                userId = id;
+                                await sp.setInt('user_id', userId!);
+                              }
+                            } catch (_) {}
+                          }
+
+                          if (userId == null) {
+                            throw Exception('User id not available');
+                          }
+
+                          final results = await _prefsApi
+                              .getUserSuggestionTitles(userId);
+                          if (!mounted) return;
+                          setState(() {
+                            _suggestions = results;
+                            _loading = false;
+                          });
+                        } catch (e) {
+                          if (!mounted) return;
+                          setState(() => _loading = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to fetch suggestions: $e'),
+                            ),
+                          );
+                        }
                       },
                       icon: const Icon(Icons.explore),
                       label: const Text('Explore suggestions'),
