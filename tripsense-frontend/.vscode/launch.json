@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/launch.json",
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter (Chrome, port 5173)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "args": ["--web-port", "5173", "--web-hostname", "localhost"]
+    },
+    {
+      "name": "Flutter (Web Server, port 5173)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "deviceId": "web-server",
+      "args": ["--web-port", "5173", "--web-hostname", "0.0.0.0"]
+    }
+  ]
+}
