@@ -33,6 +33,7 @@ app.post("/api/recomendations", (req, res) => {
       endDate,
       maxDistanceKm,
       maxBudget,
+      home,
     } = normalizeInput(req.body || {});
 
     if (!Array.isArray(categories) || categories.length === 0) {
@@ -66,6 +67,7 @@ app.post("/api/recomendations", (req, res) => {
         endDate,
         maxDistanceKm,
         maxBudget,
+        home,
       })
         .then((recs) => {
           if (Array.isArray(recs) && recs.length) return finish(recs);
@@ -86,10 +88,29 @@ app.post("/api/recomendations", (req, res) => {
       endDate,
       maxDistanceKm,
       maxBudget,
+      home,
     });
     finish(localRecs);
   } catch (err) {
     console.error("/api/recomendations error", err);
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+app.post("/api/distance-km", (req, res) => {
+  try {
+    const { from, to } = req.body || {};
+    const validNum = (v) => typeof v === "number" && Number.isFinite(v);
+    const hasCoords = (p) => p && validNum(p.lat) && validNum(p.lng);
+    if (!hasCoords(from) || !hasCoords(to)) {
+      return res
+        .status(400)
+        .json({ error: "from and to must have lat,lng numbers" });
+    }
+    const km = haversineKm(from.lat, from.lng, to.lat, to.lng);
+    res.json({ km });
+  } catch (err) {
+    console.error("/api/distance-km error", err);
     res.status(500).json({ error: "internal_error" });
   }
 });
@@ -104,6 +125,7 @@ function normalizeInput(body) {
       endDate: p.endDate,
       maxDistanceKm: p.maxDistanceKm,
       maxBudget: p.maxBudget,
+      home: p.home,
     };
   }
   return body;
@@ -138,12 +160,28 @@ async function generateWithOpenAI(params) {
   return list.slice(0, 15);
 }
 
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
 function generateLocalRecommendations(params) {
   const {
     categories = [],
     locations = [],
     maxDistanceKm,
     maxBudget,
+    home,
   } = params || {};
 
   const catLabels = {
@@ -181,7 +219,19 @@ function generateLocalRecommendations(params) {
       const baseTitles = catLabels[cat?.toLowerCase?.()] || defaults;
       const title = pick(baseTitles);
 
-      let distance = Math.round((10 + rand() * 140) * 10) / 10; // 10–150 km
+      const name = typeof loc === "string" ? loc : loc?.name || "Unknown";
+      let distance = Math.round((10 + rand() * 140) * 10) / 10;
+      const validNum = (v) => typeof v === "number" && Number.isFinite(v);
+      if (
+        home &&
+        validNum(home?.lat) &&
+        validNum(home?.lng) &&
+        typeof loc === "object" &&
+        validNum(loc?.lat) &&
+        validNum(loc?.lng)
+      ) {
+        distance = haversineKm(home.lat, home.lng, loc.lat, loc.lng);
+      }
       if (typeof maxDistanceKm === "number") {
         distance = Math.min(distance, Math.max(5, maxDistanceKm));
       }
@@ -196,7 +246,7 @@ function generateLocalRecommendations(params) {
 
       items.push({
         title,
-        location: loc,
+        location: name,
         category: cat,
         estimatedCost: cost,
         estimatedDistanceKm: distance,

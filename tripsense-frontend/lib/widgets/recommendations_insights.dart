@@ -4,7 +4,14 @@ import '../models/ai_recommendation.dart';
 
 class RecommendationsInsights extends StatelessWidget {
   final List<AiRecommendation> items;
-  const RecommendationsInsights({super.key, required this.items});
+  final ValueChanged<int>? onSelectTopIndex;
+  final ValueChanged<String>? onSelectCategory;
+  const RecommendationsInsights({
+    super.key,
+    required this.items,
+    this.onSelectTopIndex,
+    this.onSelectCategory,
+  });
 
   Map<String, int> _categoryCounts() {
     final map = <String, int>{};
@@ -54,6 +61,26 @@ class RecommendationsInsights extends StatelessWidget {
                             BarChartData(
                               gridData: const FlGridData(show: false),
                               borderData: FlBorderData(show: false),
+                              barTouchData: BarTouchData(
+                                enabled: true,
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipItem:
+                                      (group, groupIndex, rod, rodIndex) {
+                                        final title =
+                                            top[group.x.toInt()].title;
+                                        return BarTooltipItem(
+                                          '$title\nScore: ${rod.toY.toStringAsFixed(1)}',
+                                          const TextStyle(color: Colors.white),
+                                        );
+                                      },
+                                ),
+                                touchCallback: (evt, resp) {
+                                  if (resp == null || resp.spot == null) return;
+                                  final idx = resp.spot!.touchedBarGroupIndex;
+                                  if (onSelectTopIndex != null)
+                                    onSelectTopIndex!(idx);
+                                },
+                              ),
                               titlesData: FlTitlesData(
                                 leftTitles: const AxisTitles(
                                   sideTitles: SideTitles(showTitles: true),
@@ -121,6 +148,17 @@ class RecommendationsInsights extends StatelessWidget {
                             PieChartData(
                               sectionsSpace: 2,
                               centerSpaceRadius: 24,
+                              pieTouchData: PieTouchData(
+                                enabled: true,
+                                touchCallback: (evt, resp) {
+                                  final idx =
+                                      resp?.touchedSection?.touchedSectionIndex;
+                                  if (idx == null) return;
+                                  final key = cat.keys.elementAt(idx);
+                                  if (onSelectCategory != null)
+                                    onSelectCategory!(key);
+                                },
+                              ),
                               sections: [
                                 ...cat.entries.map((e) {
                                   final total = cat.values.fold<int>(

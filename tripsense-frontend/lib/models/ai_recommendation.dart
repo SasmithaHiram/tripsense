@@ -35,4 +35,14 @@ class AiRecommendation {
       score: _toDouble(json['score']),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    if (location != null) 'location': location,
+    if (category != null) 'category': category,
+    if (estimatedCost != null) 'estimatedCost': estimatedCost,
+    if (estimatedDistanceKm != null) 'estimatedDistanceKm': estimatedDistanceKm,
+    if (durationHours != null) 'durationHours': durationHours,
+    if (score != null) 'score': score,
+  };
 }

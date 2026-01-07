@@ -87,6 +87,47 @@ POST to `/api/recomendations` (intentional misspelling to match the client) with
 - If `OPENAI_API_KEY` is set, the service uses OpenAI (model defaults to `gpt-4o-mini`; override via `OPENAI_MODEL`).
 - If not set, a lightweight local fallback generates realistic, deterministic recommendations for development/testing.
 
+## Distance API
+
+- Method: `POST`
+- Path: `/api/distance-km`
+- Body:
+
+```json
+{
+  "from": { "lat": 6.9271, "lng": 79.8612 },
+  "to": { "lat": 6.0535, "lng": 80.221 }
+}
+```
+
+- Response:
+
+```json
+{ "km": 116.4 }
+```
+
+### Home-based distances in recommendations
+
+- You can provide `home` coordinates to compute `estimatedDistanceKm` when `locations` include coordinates.
+- `locations` can be strings (e.g., "Kandy") or objects with `name`, `lat`, `lng`:
+
+```json
+{
+  "preferences": [
+    {
+      "home": { "lat": 6.9271, "lng": 79.8612 },
+      "locations": [
+        { "name": "Galle", "lat": 6.0535, "lng": 80.221 },
+        { "name": "Mirissa", "lat": 5.9485, "lng": 80.454 }
+      ],
+      "categories": ["beach", "food"],
+      "maxDistanceKm": 150,
+      "maxBudget": 100
+    }
+  ]
+}
+```
+
 ### Request body
 
 ```json
@@ -121,5 +162,5 @@ POST to `/api/recomendations` (intentional misspelling to match the client) with
 
 ## Notes
 
-- The service uses OpenAI to generate recommendations when `OPENAI_API_KEY` is set; otherwise it returns an empty list.
+- The service uses OpenAI when `OPENAI_API_KEY` is set; otherwise it generates local recommendations with realistic defaults.
 - Ensure your Spring Boot service posts to `http://localhost:3000/api/recomendations`.

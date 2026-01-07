@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/preferences_service.dart';
@@ -26,6 +27,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int? _maxDistance;
   double? _maxBudget;
   List<AiRecommendation> _suggestions = const [];
+  String? _selectedCategory;
+  int? _selectedTopIndex;
+  int _visibleCount = 10;
 
   @override
   void initState() {
@@ -64,6 +68,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _dateText(DateTime? d) {
     if (d == null) return 'Not set';
     return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  List<AiRecommendation> _filteredSuggestions() {
+    List<AiRecommendation> items = List.of(_suggestions);
+    if (_selectedCategory != null) {
+      items = items
+          .where((r) => r.category != null && r.category == _selectedCategory)
+          .toList();
+    }
+    if (_selectedTopIndex != null) {
+      final sorted = List<AiRecommendation>.from(_suggestions)
+        ..sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
+      if (_selectedTopIndex! >= 0 && _selectedTopIndex! < sorted.length) {
+        final target = sorted[_selectedTopIndex!];
+        items = items.where((r) => r.title == target.title).toList();
+      }
+    }
+    return items;
+  }
+
+  Future<List<AiRecommendation>> _fetchWithRetry(int userId) async {
+    final delays = [0, 500, 1500];
+    for (final ms in delays) {
+      try {
+        if (ms > 0) {
+          await Future.delayed(Duration(milliseconds: ms));
+        }
+        final results = await _prefsApi.getUserRecommendations(userId);
+        return results;
+      } catch (_) {
+        // try next
+      }
+    }
+    // Fallback to cached data
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final cached = sp.getString('cached_recommendations');
+      if (cached != null && cached.isNotEmpty) {
+        final raw = jsonDecode(cached) as List<dynamic>;
+        return raw
+            .map((e) => AiRecommendation.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
+    throw Exception('Failed to fetch recommendations');
   }
 
   @override
@@ -180,11 +229,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  if (_suggestions.isEmpty)
+                  if (_filteredSuggestions().isEmpty)
                     const Text('No suggestions yet – try updating preferences.')
                   else
                     Column(
-                      children: _suggestions
+                      children: _filteredSuggestions()
+                          .take(_visibleCount)
                           .map(
                             (r) => ListTile(
                               leading: const Icon(Icons.explore_outlined),
@@ -218,8 +268,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           )
                           .toList(),
                     ),
+                  if (_filteredSuggestions().length > _visibleCount)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Center(
+                        child: OutlinedButton(
+                          onPressed: () => setState(() => _visibleCount += 10),
+                          child: const Text('Load more'),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 16),
-                  RecommendationsInsights(items: _suggestions),
+                  RecommendationsInsights(
+                    items: _suggestions,
+                    onSelectCategory: (cat) {
+                      setState(() {
+                        _selectedCategory = cat;
+                        _visibleCount = 10;
+                      });
+                    },
+                    onSelectTopIndex: (idx) {
+                      setState(() {
+                        _selectedTopIndex = idx;
+                        _visibleCount = 10;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 16),
                   SizedBox(
                     height: 48,
@@ -247,7 +321,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               final id = me['id'] as int?;
                               if (id != null) {
                                 userId = id;
-                                await sp.setInt('user_id', userId!);
+                                await sp.setInt('user_id', userId);
                               }
                             } catch (_) {}
                           }
@@ -256,13 +330,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             throw Exception('User id not available');
                           }
 
-                          final results = await _prefsApi
-                              .getUserRecommendations(userId);
+                          final results = await _fetchWithRetry(userId);
                           if (!mounted) return;
                           setState(() {
                             _suggestions = results;
                             _loading = false;
+                            _visibleCount = 10;
+                            _selectedCategory = null;
+                            _selectedTopIndex = null;
                           });
+                          // Cache results
+                          try {
+                            final raw = results.map((e) => e.toJson()).toList();
+                            await sp.setString(
+                              'cached_recommendations',
+                              jsonEncode(raw),
+                            );
+                          } catch (_) {}
                         } catch (e) {
                           if (!mounted) return;
                           setState(() => _loading = false);
