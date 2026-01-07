@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// SharedPreferences not needed for submitting preferences to current-user endpoint
 import '../services/preferences_service.dart';
 import '../services/preferences_api_service.dart';
 

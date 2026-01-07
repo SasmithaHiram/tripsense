@@ -34,6 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final loc = await _prefs.loadLocation();
     final (s, e) = await _prefs.loadDates();
     final (d, b) = await _prefs.loadConstraints();
+
     // Fetch suggestions via /preferences/user/{id}
     List<String> suggestions = const [];
     try {
@@ -136,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: _suggestions
                           .map(
                             (s) => ListTile(
-                              leading: const Icon(Icons.explore_outlined),
+                              leading: const Icon(Icons.place_outlined),
                               title: Text(s),
                             ),
                           )

@@ -18,18 +18,9 @@ class PreferencesApiService {
     required int maxDistanceKm,
     required double maxBudget,
   }) async {
+    // Always use current-user endpoint inferred from token
     final uri = Uri.parse('$baseUrl$preferencesEndpoint');
-    final headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-
-    // Attach auth token if available
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
+    final headers = await _headers();
 
     final body = jsonEncode({
       'categories': categories.toList(),
