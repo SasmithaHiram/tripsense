@@ -32,6 +32,19 @@ class UserApiService {
     throw Exception('Failed to load user ($userId): ${res.statusCode}');
   }
 
+  Future<Map<String, dynamic>> getUserByEmail(String email) async {
+    final safe = Uri.encodeComponent(email);
+    final uri = Uri.parse('$baseUrl$usersEndpoint/$safe');
+    final headers = await _headers();
+    final res = await http.get(uri, headers: headers);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final data = jsonDecode(res.body);
+      if (data is Map<String, dynamic>) return data;
+      return {};
+    }
+    throw Exception('Failed to load user ($email): ${res.statusCode}');
+  }
+
   Future<bool> updateMe({
     required String firstName,
     required String lastName,

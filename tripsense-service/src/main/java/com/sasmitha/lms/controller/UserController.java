@@ -1,6 +1,7 @@
 package com.sasmitha.lms.controller;
 
 import com.sasmitha.lms.dto.RegisterResponse;
+import com.sasmitha.lms.dto.UserDetailResponse;
 import com.sasmitha.lms.dto.UserRegisterRequest;
 import com.sasmitha.lms.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,11 @@ public class UserController {
         } else {
             return new ResponseEntity<>(user, HttpStatus.CREATED);
         }
+    }
+
+    @GetMapping("/{email}")
+    public ResponseEntity<UserDetailResponse> getByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(userServiceImpl.getByEmail(email));
     }
 }
 

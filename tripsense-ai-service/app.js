@@ -5,6 +5,9 @@ try {
 }
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
+const https = require("https");
+const { URL } = require("url");
 let OpenAI;
 try {
   OpenAI = require("openai");
@@ -21,6 +24,61 @@ const port = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
   res.json({ status: "ok", service: "tripsense-ai-service" });
+});
+
+function requestJson(u) {
+  return new Promise((resolve, reject) => {
+    let urlObj;
+    try {
+      urlObj = new URL(u);
+    } catch (e) {
+      return reject(new Error("invalid_url"));
+    }
+    const mod = urlObj.protocol === "https:" ? https : http;
+    const options = {
+      hostname: urlObj.hostname,
+      port: urlObj.port || (urlObj.protocol === "https:" ? 443 : 80),
+      path: urlObj.pathname + urlObj.search,
+      method: "GET",
+      headers: { Accept: "application/json" },
+    };
+    const req = mod.request(options, (resp) => {
+      let data = "";
+      resp.on("data", (chunk) => (data += chunk));
+      resp.on("end", () => {
+        if (resp.statusCode >= 200 && resp.statusCode < 300) {
+          try {
+            resolve(JSON.parse(data || "{}"));
+          } catch (_) {
+            reject(new Error("invalid_json"));
+          }
+        } else {
+          reject(new Error(`upstream_status_${resp.statusCode}`));
+        }
+      });
+    });
+    req.on("error", (err) => reject(err));
+    req.end();
+  });
+}
+
+// Proxy user details by email to upstream user service (default localhost:8080)
+app.get("/api/users/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+      return res.status(400).json({ error: "invalid_email" });
+    }
+    const base = (
+      process.env.USER_SERVICE_BASE || "http://localhost:8080"
+    ).replace(/\/$/, "");
+    const upstreamUrl = `${base}/api/v1/users/${encodeURIComponent(email)}`;
+    const data = await requestJson(upstreamUrl);
+    return res.json({ user: data });
+  } catch (err) {
+    console.error("/api/users proxy error", err?.message || err);
+    return res.status(502).json({ error: "upstream_error" });
+  }
 });
 
 // NOTE: the path intentionally matches the Spring client's constant (misspelling preserved)

@@ -164,3 +164,37 @@ POST to `/api/recomendations` (intentional misspelling to match the client) with
 
 - The service uses OpenAI when `OPENAI_API_KEY` is set; otherwise it generates local recommendations with realistic defaults.
 - Ensure your Spring Boot service posts to `http://localhost:3000/api/recomendations`.
+
+## User API (proxy)
+
+- Method: `GET`
+- Path: `/api/users/:email`
+- Description: Proxies to your upstream user service at `USER_SERVICE_BASE` (defaults to `http://localhost:8080`) calling `/api/v1/users/:email` and returns `{ user: ... }`.
+
+### Configure upstream
+
+Add to `.env` if your user service runs elsewhere:
+
+```
+USER_SERVICE_BASE=http://localhost:8080
+```
+
+### Example
+
+Request:
+
+```bash
+curl http://localhost:3000/api/users/sasmithahiram2003@gmail.com
+```
+
+Response:
+
+```json
+{
+  "user": {
+    "email": "sasmithahiram2003@gmail.com",
+    "name": "Sasmitha Hiram",
+    "roles": ["USER"]
+  }
+}
+```

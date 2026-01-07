@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/user_api_service.dart';
@@ -51,16 +50,53 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       if (ok) {
-        // Fetch current user ID and store it for suggestions endpoint
+        // After login, fetch user details by email and show them
+        int? userId;
         try {
           final userSvc = UserApiService();
-          final me = await userSvc.getMe();
-          final userId = me['id'] as int?;
-          if (userId != null) {
-            final sp = await SharedPreferences.getInstance();
-            await sp.setInt('user_id', userId);
+          final details = await userSvc.getUserByEmail(_emailCtrl.text.trim());
+          userId = (details['userId'] as int?) ?? (details['id'] as int?);
+          final firstName = details['firstName'] as String?;
+          final lastName = details['lastName'] as String?;
+          final email = details['email'] as String? ?? _emailCtrl.text.trim();
 
-            // If preferences exist, go straight to dashboard
+          final sp = await SharedPreferences.getInstance();
+          if (userId != null) await sp.setInt('user_id', userId);
+          if (email != null) await sp.setString('user_email', email);
+          if (firstName != null) await sp.setString('first_name', firstName);
+          if (lastName != null) await sp.setString('last_name', lastName);
+
+          if (!mounted) return;
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('User Details'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (userId != null) Text('ID: $userId'),
+                  if (firstName != null) Text('First name: $firstName'),
+                  if (lastName != null) Text('Last name: $lastName'),
+                  Text('Email: $email'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Continue'),
+                ),
+              ],
+            ),
+          );
+        } catch (_) {
+          // If fetching by email fails, continue without blocking login
+        }
+
+        // If we have a userId, check for existing preferences and route
+        try {
+          userId ??= (await SharedPreferences.getInstance()).getInt('user_id');
+          if (userId != null) {
             final prefsApi = PreferencesApiService();
             final existing = await prefsApi.getUserPreferences(userId);
             if (existing != null) {
@@ -74,9 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
               return;
             }
           }
-        } catch (_) {
-          // ignore failures and continue to setup
-        }
+        } catch (_) {}
 
         if (!mounted) return;
         ScaffoldMessenger.of(

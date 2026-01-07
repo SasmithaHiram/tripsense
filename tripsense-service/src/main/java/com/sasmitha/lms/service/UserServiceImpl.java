@@ -1,6 +1,7 @@
 package com.sasmitha.lms.service;
 
 import com.sasmitha.lms.dto.RegisterResponse;
+import com.sasmitha.lms.dto.UserDetailResponse;
 import com.sasmitha.lms.dto.UserRegisterRequest;
 import com.sasmitha.lms.model.Role;
 import com.sasmitha.lms.model.User;
@@ -10,6 +11,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +42,25 @@ public class UserServiceImpl {
                 user.getEmail(),
                 roleFromDB.getName()
         );
+    }
+
+    public UserDetailResponse getByEmail(String email) {
+        if (email == null) {
+            throw new RuntimeException(email + " is null");
+        }
+
+        Optional<User> user = adminRepository.findByEmail(email);
+
+        if (user.isEmpty()) {
+            throw new RuntimeException(email + " is not registered");
+        }
+
+        UserDetailResponse userDetailResponse = new UserDetailResponse();
+        userDetailResponse.setUserId(user.get().getId());
+        userDetailResponse.setFirstName(user.get().getFirstName());
+        userDetailResponse.setLastName(user.get().getLastName());
+        userDetailResponse.setEmail(user.get().getEmail());
+        return userDetailResponse;
     }
 }
 
