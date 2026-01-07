@@ -1,4 +1,8 @@
-require("dotenv").config();
+try {
+  require("dotenv").config();
+} catch (_) {
+  // dotenv not installed or not needed; continue without loading .env
+}
 const express = require("express");
 const cors = require("cors");
 let OpenAI;
