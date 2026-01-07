@@ -54,6 +54,7 @@ public class PreferenceServiceImpl {
         preferenceResponse.setEndDate(preferenceRequest.getEndDate());
         preferenceResponse.setMaxDistanceKm(preferenceRequest.getMaxDistanceKm());
         preferenceResponse.setMaxBudget(preferenceRequest.getMaxBudget());
+        preferenceResponse.setUserId(user.getId());
         return preferenceResponse;
     }
 

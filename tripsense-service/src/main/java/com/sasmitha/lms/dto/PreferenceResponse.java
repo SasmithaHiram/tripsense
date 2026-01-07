@@ -21,5 +21,6 @@ public class PreferenceResponse {
     private Double maxBudget;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
+    private Long userId;
 }
 
