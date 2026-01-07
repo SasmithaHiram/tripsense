@@ -1,0 +1,23 @@
+{
+  "name": "tripsense-ai-service",
+  "version": "1.0.0",
+  "description": "Express service providing AI-like travel recommendations for Spring Boot client",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": [
+    "express",
+    "ai",
+    "recommendations",
+    "travel"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "openai": "^4.53.2",
+    "dotenv": "^16.4.5"
+  }
+}
