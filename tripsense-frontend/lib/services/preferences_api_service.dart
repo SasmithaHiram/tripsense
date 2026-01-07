@@ -33,6 +33,25 @@ class PreferencesApiService {
 
     final res = await http.post(uri, headers: headers, body: body);
     if (res.statusCode >= 200 && res.statusCode < 300) {
+      // Try to capture and persist userId from response for later calls
+      try {
+        final data = jsonDecode(res.body);
+        if (data is Map) {
+          final dynamic uid = data['userId'] ?? data['user_id'] ?? data['uid'];
+          int? userId;
+          if (uid is int) {
+            userId = uid;
+          } else if (uid is String) {
+            userId = int.tryParse(uid);
+          }
+          if (userId != null) {
+            final sp = await SharedPreferences.getInstance();
+            await sp.setInt('user_id', userId);
+          }
+        }
+      } catch (_) {
+        // ignore json parse errors
+      }
       return true;
     }
 

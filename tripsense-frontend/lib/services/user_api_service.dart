@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UserApiService {
   static const String baseUrl = 'http://localhost:8080/api/v1';
   static const String meEndpoint = '/users/me';
+  static const String usersEndpoint = '/users';
 
   Future<Map<String, dynamic>> getMe() async {
     final uri = Uri.parse('$baseUrl$meEndpoint');
@@ -17,6 +18,18 @@ class UserApiService {
       return {};
     }
     throw Exception('Failed to load profile (${res.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> getUserById(int userId) async {
+    final uri = Uri.parse('$baseUrl$usersEndpoint/$userId');
+    final headers = await _headers();
+    final res = await http.get(uri, headers: headers);
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final data = jsonDecode(res.body);
+      if (data is Map<String, dynamic>) return data;
+      return {};
+    }
+    throw Exception('Failed to load user ($userId): ${res.statusCode}');
   }
 
   Future<bool> updateMe({
