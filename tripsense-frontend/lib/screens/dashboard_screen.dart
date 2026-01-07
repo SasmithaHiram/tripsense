@@ -34,14 +34,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final loc = await _prefs.loadLocation();
     final (s, e) = await _prefs.loadDates();
     final (d, b) = await _prefs.loadConstraints();
-    // Try to get suggestions for current user via token
+
+    // Fetch suggestions via /preferences/user/{id}
     List<String> suggestions = const [];
     try {
-      final data = await _prefsApi.getMyPreferences();
-      if (data != null && data['suggestions'] is List) {
-        suggestions = (data['suggestions'] as List).whereType<String>().toList(
-          growable: false,
-        );
+      final sp = await SharedPreferences.getInstance();
+      final userId = sp.getInt('user_id');
+      if (userId != null) {
+        suggestions = await _prefsApi.getUserSuggestionTitles(userId);
       }
     } catch (_) {}
     if (!mounted) return;

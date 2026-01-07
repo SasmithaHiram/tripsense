@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/user_api_service.dart';
 import '../services/preferences_api_service.dart';
 
@@ -50,28 +51,37 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       if (ok) {
-        // Check if current user already has preferences using token-based endpoint.
-        final prefsApi = PreferencesApiService();
+        // Fetch current user ID and store it for suggestions endpoint
         try {
-          final existing = await prefsApi.getMyPreferences();
-          if (existing != null) {
-            // Preferences already exist; go to dashboard
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Welcome back! Loaded preferences')),
-            );
-            Navigator.pushReplacementNamed(context, '/dashboard');
-            return;
+          final userSvc = UserApiService();
+          final me = await userSvc.getMe();
+          final userId = me['id'] as int?;
+          if (userId != null) {
+            final sp = await SharedPreferences.getInstance();
+            await sp.setInt('user_id', userId);
+
+            // If preferences exist, go straight to dashboard
+            final prefsApi = PreferencesApiService();
+            final existing = await prefsApi.getUserPreferences(userId);
+            if (existing != null) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Welcome back! Loaded preferences'),
+                ),
+              );
+              Navigator.pushReplacementNamed(context, '/dashboard');
+              return;
+            }
           }
         } catch (_) {
-          // If fetching user or preferences fails, fall through to setup
+          // ignore failures and continue to setup
         }
 
-        // No preferences found; proceed to setup flow
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful. Let’s set up preferences.'),
-          ),
-        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Login successful')));
         Navigator.pushReplacementNamed(context, '/preferences');
       }
     } catch (e) {

@@ -46,47 +46,21 @@ class PreferencesApiService {
     throw Exception(message);
   }
 
-  /// Fetch stored preferences (and potentially suggestions) for a given user.
+  /// Fetch stored preferences and AI recommendations for a specific user.
   /// Returns a JSON map if found, or null if none exist (e.g., 404).
   Future<Map<String, dynamic>?> getUserPreferences(int userId) async {
     final uri = Uri.parse('$baseUrl$preferencesEndpoint/user/$userId');
-    final headers = await _headers();
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
     final res = await http.get(uri, headers: headers);
-
-    // Treat 200..299 as valid with JSON payload
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      try {
-        final data = jsonDecode(res.body);
-        if (data is Map<String, dynamic>) return data;
-        return {};
-      } catch (_) {
-        return {};
-      }
-    }
-
-    // If backend returns 404 for "no preferences", return null
-    if (res.statusCode == 404) {
-      return null;
-    }
-
-    // Other errors
-    String message = 'Failed to load preferences (${res.statusCode})';
-    try {
-      final data = jsonDecode(res.body);
-      if (data is Map && data['message'] is String) {
-        message = data['message'] as String;
-      }
-    } catch (_) {}
-    throw Exception(message);
-  }
-
-  /// Fetch preferences for the current authenticated user using token.
-  /// Returns a JSON map if found, or null if none exist (404).
-  Future<Map<String, dynamic>?> getMyPreferences() async {
-    final uri = Uri.parse('$baseUrl$preferencesEndpoint');
-    final headers = await _headers();
-    // Backend expects POST for this endpoint; send an empty JSON body
-    final res = await http.post(uri, headers: headers, body: jsonEncode({}));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       try {
@@ -109,17 +83,19 @@ class PreferencesApiService {
     throw Exception(message);
   }
 
-  Future<Map<String, String>> _headers() async {
-    final headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    if (token == null || token.isEmpty) {
-      throw Exception('Missing auth token. Please log in again.');
+  /// Convenience: get only suggestion titles from /preferences/user/{id}
+  Future<List<String>> getUserSuggestionTitles(int userId) async {
+    final data = await getUserPreferences(userId);
+    if (data == null) return const [];
+    final ai = data['aiRecommendations'];
+    if (ai is Map && ai['recommendations'] is List) {
+      final recs = ai['recommendations'] as List;
+      return recs
+          .whereType<Map>()
+          .map((m) => m['title'])
+          .whereType<String>()
+          .toList(growable: false);
     }
-    headers['Authorization'] = 'Bearer $token';
-    return Map<String, String>.from(headers);
+    return const [];
   }
 }
