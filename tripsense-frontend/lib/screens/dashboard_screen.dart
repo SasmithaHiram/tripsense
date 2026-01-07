@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/preferences_service.dart';
+import '../services/preferences_api_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   static const routeName = '/dashboard';
@@ -11,6 +13,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _prefs = PreferencesService();
+  final _prefsApi = PreferencesApiService();
   bool _loading = true;
   Set<String> _categories = {};
   String? _location;
@@ -18,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DateTime? _end;
   int? _maxDistance;
   double? _maxBudget;
+  List<String> _suggestions = const [];
 
   @override
   void initState() {
@@ -30,6 +34,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final loc = await _prefs.loadLocation();
     final (s, e) = await _prefs.loadDates();
     final (d, b) = await _prefs.loadConstraints();
+    // Try to get suggestions for current user via token
+    List<String> suggestions = const [];
+    try {
+      final data = await _prefsApi.getMyPreferences();
+      if (data != null && data['suggestions'] is List) {
+        suggestions = (data['suggestions'] as List).whereType<String>().toList(
+          growable: false,
+        );
+      }
+    } catch (_) {}
     if (!mounted) return;
     setState(() {
       _categories = cats;
@@ -38,6 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _end = e;
       _maxDistance = d;
       _maxBudget = b;
+      _suggestions = suggestions;
       _loading = false;
     });
   }
@@ -110,18 +125,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  const Text(
+                    'Suggestions',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_suggestions.isEmpty)
+                    const Text('No suggestions yet – try updating preferences.')
+                  else
+                    Column(
+                      children: _suggestions
+                          .map(
+                            (s) => ListTile(
+                              leading: const Icon(Icons.place_outlined),
+                              title: Text(s),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  const SizedBox(height: 16),
                   SizedBox(
                     height: 48,
                     child: FilledButton.icon(
-                      onPressed: () {
-                        // Placeholder for triggering suggestions fetch
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Fetching AI travel suggestions (stub)...',
-                            ),
-                          ),
-                        );
+                      onPressed: () async {
+                        setState(() => _loading = true);
+                        await _load();
                       },
                       icon: const Icon(Icons.explore),
                       label: const Text('Explore suggestions'),

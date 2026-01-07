@@ -24,20 +24,39 @@ class AuthService {
     final res = await http.post(uri, headers: headers, body: body);
 
     if (res.statusCode == 200 || res.statusCode == 201) {
-      // Parse token if provided
+      // Parse token from body or Authorization header
+      String? token;
       try {
         final data = jsonDecode(res.body);
-        final token = (data is Map)
-            ? (data['token'] ?? data['accessToken'] ?? data['jwt'])
-            : null;
-        if (token is String && token.isNotEmpty) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', token);
+        if (data is Map) {
+          token =
+              (data['token'] ??
+                      data['accessToken'] ??
+                      data['access_token'] ??
+                      data['jwt'])
+                  as String?;
         }
       } catch (_) {
-        // Ignore parse errors; treat as success without token
+        // ignore JSON parse errors
       }
-      return true;
+
+      // If not found in body, try the Authorization header
+      token ??= _extractTokenFromAuthHeader(
+        res.headers['authorization'] ?? res.headers['Authorization'],
+      );
+
+      // Persist normalized token if present
+      if (token != null && token.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', _normalizeToken(token));
+        return true;
+      }
+
+      // If the server did not provide a token, fail clearly so
+      // token-protected endpoints (like /preferences) won't 403 silently.
+      throw Exception(
+        'Login succeeded but no token was provided by the server',
+      );
     }
 
     // Extract error message if available
@@ -82,5 +101,22 @@ class AuthService {
       }
     } catch (_) {}
     throw Exception(message);
+  }
+
+  // Normalizes tokens to raw JWT by stripping a leading "Bearer " prefix.
+  String _normalizeToken(String token) {
+    final t = token.trim();
+    const bearer = 'Bearer ';
+    if (t.startsWith(bearer)) return t.substring(bearer.length).trim();
+    return t;
+  }
+
+  // Extracts the token part from an Authorization header value if present.
+  String? _extractTokenFromAuthHeader(String? headerValue) {
+    if (headerValue == null || headerValue.trim().isEmpty) return null;
+    final v = headerValue.trim();
+    const bearer = 'Bearer ';
+    if (v.startsWith(bearer)) return v.substring(bearer.length).trim();
+    return v; // if server sent token without prefix
   }
 }

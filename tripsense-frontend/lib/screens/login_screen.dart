@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import '../services/user_api_service.dart';
+import '../services/preferences_api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
@@ -47,9 +50,28 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       if (ok) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Login successful')));
+        // Check if current user already has preferences using token-based endpoint.
+        final prefsApi = PreferencesApiService();
+        try {
+          final existing = await prefsApi.getMyPreferences();
+          if (existing != null) {
+            // Preferences already exist; go to dashboard
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Welcome back! Loaded preferences')),
+            );
+            Navigator.pushReplacementNamed(context, '/dashboard');
+            return;
+          }
+        } catch (_) {
+          // If fetching user or preferences fails, fall through to setup
+        }
+
+        // No preferences found; proceed to setup flow
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login successful. Let’s set up preferences.'),
+          ),
+        );
         Navigator.pushReplacementNamed(context, '/preferences');
       }
     } catch (e) {
