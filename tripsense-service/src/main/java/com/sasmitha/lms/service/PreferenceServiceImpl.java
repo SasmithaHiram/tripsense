@@ -2,6 +2,7 @@ package com.sasmitha.lms.service;
 
 import com.sasmitha.lms.dto.PreferenceRequest;
 import com.sasmitha.lms.dto.PreferenceResponse;
+import com.sasmitha.lms.dto.UserPreferenceAIResponse;
 import com.sasmitha.lms.model.Preference;
 import com.sasmitha.lms.model.User;
 import com.sasmitha.lms.repository.AdminRepository;
@@ -15,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ import java.util.List;
 public class PreferenceServiceImpl {
     private final PreferenceRepository preferenceRepository;
     private final AdminRepository adminRepository;
+    private final AIServiceImpl aiService;
 
     public PreferenceResponse create(PreferenceRequest preferenceRequest) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -54,9 +57,16 @@ public class PreferenceServiceImpl {
         return preferenceResponse;
     }
 
-    public List<PreferenceResponse> getByUserId(Long userId) {
+    public UserPreferenceAIResponse getByUserId(Long userId) {
         List<Preference> preferences = preferenceRepository.findByUserId(userId);
-        return preferences.stream().map(pref -> {
+
+        if (preferences.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Preference not found");
+        }
+
+        Map<String, Object> recommendations = aiService.getRecommendations(preferences);
+
+        List<PreferenceResponse> preferenceResponses = preferences.stream().map(pref -> {
             PreferenceResponse resp = new PreferenceResponse();
             resp.setId(pref.getId());
             resp.setCategories(pref.getCategories());
@@ -69,5 +79,11 @@ public class PreferenceServiceImpl {
             resp.setUpdateAt(pref.getUpdateAt());
             return resp;
         }).toList();
+
+        UserPreferenceAIResponse userPreferenceAIResponse = new UserPreferenceAIResponse();
+        userPreferenceAIResponse.setPreferences(preferenceResponses);
+        userPreferenceAIResponse.setAiRecommendations(recommendations);
+
+        return userPreferenceAIResponse;
     }
 }
