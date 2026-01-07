@@ -54,4 +54,57 @@ class PreferencesApiService {
     } catch (_) {}
     throw Exception(message);
   }
+
+  /// Fetch stored preferences and AI recommendations for a specific user.
+  /// Returns a JSON map if found, or null if none exist (e.g., 404).
+  Future<Map<String, dynamic>?> getUserPreferences(int userId) async {
+    final uri = Uri.parse('$baseUrl$preferencesEndpoint/user/$userId');
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    final res = await http.get(uri, headers: headers);
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      try {
+        final data = jsonDecode(res.body);
+        if (data is Map<String, dynamic>) return data;
+        return {};
+      } catch (_) {
+        return {};
+      }
+    }
+    if (res.statusCode == 404) return null;
+
+    String message = 'Failed to load preferences (${res.statusCode})';
+    try {
+      final data = jsonDecode(res.body);
+      if (data is Map && data['message'] is String) {
+        message = data['message'] as String;
+      }
+    } catch (_) {}
+    throw Exception(message);
+  }
+
+  /// Convenience: get only suggestion titles from /preferences/user/{id}
+  Future<List<String>> getUserSuggestionTitles(int userId) async {
+    final data = await getUserPreferences(userId);
+    if (data == null) return const [];
+    final ai = data['aiRecommendations'];
+    if (ai is Map && ai['recommendations'] is List) {
+      final recs = ai['recommendations'] as List;
+      return recs
+          .whereType<Map>()
+          .map((m) => m['title'])
+          .whereType<String>()
+          .toList(growable: false);
+    }
+    return const [];
+  }
 }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_api_service.dart';
+import '../services/preferences_api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
@@ -47,6 +50,34 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       if (ok) {
+        // Fetch current user ID and store it for suggestions endpoint
+        try {
+          final userSvc = UserApiService();
+          final me = await userSvc.getMe();
+          final userId = me['id'] as int?;
+          if (userId != null) {
+            final sp = await SharedPreferences.getInstance();
+            await sp.setInt('user_id', userId);
+
+            // If preferences exist, go straight to dashboard
+            final prefsApi = PreferencesApiService();
+            final existing = await prefsApi.getUserPreferences(userId);
+            if (existing != null) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Welcome back! Loaded preferences'),
+                ),
+              );
+              Navigator.pushReplacementNamed(context, '/dashboard');
+              return;
+            }
+          }
+        } catch (_) {
+          // ignore failures and continue to setup
+        }
+
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Login successful')));
