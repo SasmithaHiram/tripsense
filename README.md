@@ -191,7 +191,7 @@ The Spring Boot service exposes these main endpoints:
 ### AI Service Endpoints
 
 - **Health Check**: `GET /` - Returns service status
-- **Recommendations**: `POST /api/recomendations` - Generate trip recommendations
+- **Recommendations**: `POST /api/recomendations` - Generate trip recommendations (note: endpoint spelling is intentional)
 - **Distance**: `POST /api/distance-km` - Calculate distance between coordinates
 - **User Proxy**: `GET /api/users/:email` - Proxy to backend user service
 
@@ -225,6 +225,8 @@ curl -X POST http://localhost:8080/api/v1/preferences \
 ```
 
 ### Get AI Recommendations
+
+**Note**: The endpoint uses `recomendations` (spelling is intentional to match the backend client).
 
 ```bash
 curl -X POST http://localhost:3000/api/recomendations \
